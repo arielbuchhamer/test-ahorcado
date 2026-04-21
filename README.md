@@ -37,6 +37,12 @@ Incluye:
 - una clase inicial de ejemplo
 - un test unitario inicial
 
+## Unit Tests
+
+Los unit tests del backend se implementan con **JUnit 5**.
+
+Actualmente se utilizan para validar de forma automatica reglas basicas del juego del ahorcado, siguiendo un enfoque incremental orientado a TDD.
+
 ## Como ejecutar los tests
 
 Desde la carpeta `backend`, ejecutar:
@@ -53,5 +59,4 @@ Esta base permite comenzar con:
 - evolucion incremental del backend
 - futura integracion con frontend React
 - incorporacion posterior de CI/CD, coverage y analisis estatico
-
 
