@@ -1,6 +1,7 @@
 # Maven
 **/target/
 .mvn/
+backend/.m2repo/
 
 # IDEs and editors
 .idea/
