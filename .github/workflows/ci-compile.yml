@@ -1,4 +1,4 @@
-name: CI Compile
+name: CI Backend
 
 on:
   push:
@@ -24,3 +24,7 @@ jobs:
       - name: Compile backend
         working-directory: backend
         run: mvn -B -DskipTests compile
+
+      - name: Run unit tests
+        working-directory: backend
+        run: mvn -B test
