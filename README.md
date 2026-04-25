@@ -11,12 +11,17 @@ El repositorio arranca con una base minima de backend en Java para comenzar a tr
 - Backend: Java 21
 - Build tool: Maven
 - Testing backend: JUnit 5
+- CI: GitHub Actions
+- Code coverage: JaCoCo
 - Frontend: React
 
 ## Estructura del proyecto
 
 ```text
 test-ahorcado/
+|-- .github/
+|   `-- workflows/
+|       `-- ci-compile.yml
 |-- backend/
 |   |-- pom.xml
 |   `-- src/
@@ -43,6 +48,30 @@ Los unit tests del backend se implementan con **JUnit 5**.
 
 Actualmente se utilizan para validar de forma automatica reglas basicas del juego del ahorcado, siguiendo un enfoque incremental orientado a TDD.
 
+## CI
+
+El proyecto utiliza **GitHub Actions** como servidor de integracion continua.
+
+Actualmente, el workflow:
+
+- compila el backend con Maven
+- ejecuta los unit tests automaticamente
+- se dispara en cada `push` y `pull request` sobre `main`
+
+La configuracion del pipeline se encuentra en `.github/workflows/ci-compile.yml`.
+
+## Code Coverage
+
+La cobertura de codigo del backend se mide con **JaCoCo**.
+
+Al ejecutar los tests, Maven genera el reporte de coverage y GitHub Actions lo publica como artifact en cada ejecucion del pipeline.
+
+El reporte HTML se genera en:
+
+```text
+backend/target/site/jacoco/
+```
+
 ## Como ejecutar los tests
 
 Desde la carpeta `backend`, ejecutar:
@@ -58,5 +87,4 @@ Esta base permite comenzar con:
 - desarrollo guiado por tests
 - evolucion incremental del backend
 - futura integracion con frontend React
-- incorporacion posterior de CI/CD, coverage y analisis estatico
-
+- incorporacion posterior de analisis estatico
