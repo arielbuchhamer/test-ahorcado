@@ -3,7 +3,7 @@ package com.testahorcado.backend;
 public class JuegoAhorcado {
 
     private final String palabraSecreta;
-    private int vidas = 2;
+    private int vidas = 6;
 
     public JuegoAhorcado(String palabraSecreta) {
         if (palabraSecreta == null || palabraSecreta.isBlank()) {

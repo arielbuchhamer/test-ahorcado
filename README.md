@@ -13,6 +13,7 @@ El repositorio arranca con una base minima de backend en Java para comenzar a tr
 - Testing backend: JUnit 5
 - CI: GitHub Actions
 - Code coverage: JaCoCo
+- Analisis estatico: SonarCloud
 - Frontend: React
 
 ## Estructura del proyecto
@@ -56,6 +57,7 @@ Actualmente, el workflow:
 
 - compila el backend con Maven
 - ejecuta los unit tests automaticamente
+- ejecuta analisis estatico con SonarCloud
 - se dispara en cada `push` y `pull request` sobre `main`
 
 La configuracion del pipeline se encuentra en `.github/workflows/ci-compile.yml`.
@@ -72,6 +74,24 @@ El reporte HTML se genera en:
 backend/target/site/jacoco/
 ```
 
+## Analisis estatico con SonarCloud
+
+El pipeline de CI incluye un paso de analisis estatico usando **SonarCloud** sobre el modulo `backend`.
+
+Para dejarlo operativo en GitHub, hay que configurar:
+
+- un secret llamado `SONAR_TOKEN` con el token generado en SonarCloud
+- una variable de repositorio `SONAR_PROJECT_KEY`
+- una variable de repositorio `SONAR_ORGANIZATION`
+
+El analisis usa:
+
+- **SonarScanner for Maven**
+- cobertura **JaCoCo** en formato XML
+- integracion con **GitHub Actions**
+
+Durante el pipeline se ejecuta el analisis luego de compilar, correr tests y generar la cobertura.
+
 ## Como ejecutar los tests
 
 Desde la carpeta `backend`, ejecutar:
@@ -87,4 +107,4 @@ Esta base permite comenzar con:
 - desarrollo guiado por tests
 - evolucion incremental del backend
 - futura integracion con frontend React
-- incorporacion posterior de analisis estatico
+- incorporacion de analisis estatico en CI con SonarCloud
