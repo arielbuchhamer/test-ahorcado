@@ -13,7 +13,7 @@ El repositorio arranca con una base minima de backend en Java para comenzar a tr
 - Testing backend: JUnit 5
 - CI: GitHub Actions
 - Code coverage: JaCoCo
-- Analisis estatico: SonarCloud
+- Analisis estatico continuo: SonarCloud
 - Frontend: React
 
 ## Estructura del proyecto
