@@ -40,7 +40,7 @@ class JuegoAhorcadoTest {
 
         juego.adivinarLetra('h');
 
-        assertEquals(2, juego.obtenerVidas());
+        assertEquals(6, juego.obtenerVidas());
     }
 
     @Test
@@ -56,7 +56,7 @@ class JuegoAhorcadoTest {
 
         juego.adivinarLetra('x');
 
-        assertEquals(1, juego.obtenerVidas());
+        assertEquals(5, juego.obtenerVidas());
     }
 
     @Test
@@ -65,6 +65,10 @@ class JuegoAhorcadoTest {
 
         juego.adivinarLetra('x');
         juego.adivinarLetra('z');
+        juego.adivinarLetra('q');
+        juego.adivinarLetra('w');
+        juego.adivinarLetra('t');
+        juego.adivinarLetra('p');
 
         assertEquals(0, juego.obtenerVidas());
         assertFalse(juego.adivinarLetra('h'));
