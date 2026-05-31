@@ -43,6 +43,24 @@ Incluye:
 - una clase inicial de ejemplo
 - un test unitario inicial
 
+## Frontend
+
+El frontend fue inicializado como una aplicacion React independiente dentro de `frontend/`.
+
+Incluye una primera vista jugable del ahorcado:
+
+- carga de palabra secreta con input de tipo password
+- opcion para mostrar u ocultar la palabra secreta
+- validacion de letras sin tildes, permitiendo la letra ñ
+- partida con 6 vidas
+- ingreso de letras de a una
+- dibujo simple del ahorcado
+- letras usadas, vidas restantes y palabra oculta
+- mensajes de victoria o derrota
+- reinicio para nueva partida
+
+Por ahora no depende del backend.
+
 ## Unit Tests
 
 Los unit tests del backend se implementan con **JUnit 5**.
@@ -98,6 +116,21 @@ Desde la carpeta `backend`, ejecutar:
 
 ```bash
 mvn test
+```
+
+## Como ejecutar el frontend
+
+Desde la carpeta `frontend`, ejecutar:
+
+```bash
+npm install
+npm run dev
+```
+
+Para generar una build de produccion:
+
+```bash
+npm run build
 ```
 
 ## Objetivo de esta base

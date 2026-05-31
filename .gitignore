@@ -3,6 +3,12 @@
 .mvn/
 backend/.m2repo/
 
+# Frontend
+**/node_modules/
+**/dist/
+**/.vite/
+**/coverage/
+
 # IDEs and editors
 .idea/
 .vscode/
