@@ -74,6 +74,7 @@ El proyecto utiliza **GitHub Actions** como servidor de integracion continua.
 Actualmente, el workflow:
 
 - compila el backend con Maven
+- instala dependencias y compila el frontend con Node.js 22 (`npm ci` + `npm run build`)
 - ejecuta los unit tests automaticamente
 - ejecuta analisis estatico con SonarCloud
 - se dispara en cada `push` y `pull request` sobre `main`
