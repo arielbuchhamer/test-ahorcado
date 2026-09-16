@@ -4,7 +4,7 @@ Proyecto base para el desarrollo de una aplicacion del juego del ahorcado, pensa
 
 ## Estado actual
 
-El repositorio arranca con una base minima de backend en Java para comenzar a trabajar con TDD desde el inicio.
+La aplicacion esta compuesta por una API REST en Java con la logica del juego y una UI web en React que la consume.
 
 ### Tecnologias definidas
 
@@ -14,7 +14,8 @@ El repositorio arranca con una base minima de backend en Java para comenzar a tr
 - CI: GitHub Actions
 - Code coverage: JaCoCo
 - Analisis estatico continuo: SonarCloud
-- Frontend: React
+- API REST: Spring Boot 4
+- Frontend: React (Vite)
 
 ## Estructura del proyecto
 
@@ -26,46 +27,84 @@ test-ahorcado/
 |-- backend/
 |   |-- pom.xml
 |   `-- src/
-|       |-- main/java/com/testahorcado/backend/
+|       |-- main/java/com/testahorcado/backend/      # dominio del juego
+|       |-- main/java/com/testahorcado/backend/api/  # API REST
+|       |-- main/resources/application.properties
 |       `-- test/java/com/testahorcado/backend/
+|-- frontend/
+|   |-- package.json
+|   |-- vite.config.js
+|   `-- src/
+|       |-- api.js                                   # cliente de la API
+|       `-- components/HangmanGame.jsx
 |-- .gitignore
 `-- README.md
 ```
 
 ## Backend
 
-El backend fue inicializado con Maven y configurado para trabajar con Java 21.
+El backend es una API REST con **Spring Boot 4** y Java 21. Contiene toda la logica del juego, que se desarrolla con TDD.
 
-Incluye:
+- `JuegoAhorcado`: reglas del juego (validacion de palabra y letras, vidas, letras usadas, palabra oculta, estado de la partida)
+- `api/PartidaController`: expone el juego por HTTP
+- `api/PartidaRepository`: guarda las partidas en memoria
 
-- un `pom.xml` base
-- soporte para `JUnit 5`
-- una clase inicial de ejemplo
-- un test unitario inicial
+### Endpoints
+
+| Metodo | Ruta | Body | Descripcion |
+|---|---|---|---|
+| `POST` | `/api/partidas` | `{ "palabra": "hola" }` | Crea una partida |
+| `GET` | `/api/partidas/{id}` | - | Devuelve el estado de la partida |
+| `POST` | `/api/partidas/{id}/letras` | `{ "letra": "a" }` | Intenta una letra |
+
+Respuesta:
+
+```json
+{
+  "id": "…",
+  "palabraOculta": "_ o _ a",
+  "vidas": 5,
+  "letrasUsadas": ["x", "o", "a"],
+  "estado": "EN_JUEGO",
+  "palabraSecreta": null,
+  "resultado": "ACIERTO"
+}
+```
+
+- `estado`: `EN_JUEGO`, `GANADA` o `PERDIDA`
+- `resultado` (solo al intentar una letra): `ACIERTO`, `FALLO`, `REPETIDA` o `PARTIDA_TERMINADA`
+- `palabraSecreta` solo se informa cuando la partida termino
+- los datos invalidos devuelven `400` y una partida inexistente `404`, ambos con `{ "error": "mensaje" }`
+
+### Configuracion
+
+| Variable de entorno | Default | Uso |
+|---|---|---|
+| `PORT` | `8080` | Puerto del servidor |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Origenes habilitados para llamar a la API (separados por coma) |
 
 ## Frontend
 
-El frontend fue inicializado como una aplicacion React independiente dentro de `frontend/`.
-
-Incluye una primera vista jugable del ahorcado:
+El frontend es una aplicacion React independiente dentro de `frontend/`. No contiene reglas del juego: consume la API del backend y muestra el estado de la partida.
 
 - carga de palabra secreta con input de tipo password
 - opcion para mostrar u ocultar la palabra secreta
-- validacion de letras sin tildes, permitiendo la letra ñ
-- partida con 6 vidas
-- ingreso de letras de a una
+- ingreso de letras de a una, por input o con el teclado en pantalla
 - dibujo simple del ahorcado
 - letras usadas, vidas restantes y palabra oculta
-- mensajes de victoria o derrota
+- mensajes de error, victoria o derrota devueltos por la API
 - reinicio para nueva partida
 
-Por ahora no depende del backend.
+La URL de la API se configura con la variable `VITE_API_URL` al momento del build. En desarrollo no hace falta: Vite redirige `/api` a `http://localhost:8080`.
 
 ## Unit Tests
 
 Los unit tests del backend se implementan con **JUnit 5**.
 
-Actualmente se utilizan para validar de forma automatica reglas basicas del juego del ahorcado, siguiendo un enfoque incremental orientado a TDD.
+Se organizan en dos niveles:
+
+- `JuegoAhorcadoTest`: unit tests de las reglas del juego, escritos con TDD
+- `PartidaControllerTest`: tests de la API con Spring MockMvc, que validan los endpoints junto con la logica real (service tests)
 
 ## CI
 
@@ -119,19 +158,27 @@ Desde la carpeta `backend`, ejecutar:
 mvn test
 ```
 
-## Como ejecutar el frontend
+## Como ejecutar la aplicacion
 
-Desde la carpeta `frontend`, ejecutar:
+Levantar primero el backend, desde la carpeta `backend`:
+
+```bash
+mvn spring-boot:run
+```
+
+Luego, en otra terminal, levantar el frontend desde la carpeta `frontend`:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para generar una build de produccion:
+Abrir `http://localhost:5173`.
+
+Para generar una build de produccion del frontend apuntando a una API desplegada:
 
 ```bash
-npm run build
+VITE_API_URL=https://mi-backend.example.com npm run build
 ```
 
 ## Objetivo de esta base
@@ -140,5 +187,4 @@ Esta base permite comenzar con:
 
 - desarrollo guiado por tests
 - evolucion incremental del backend
-- futura integracion con frontend React
 - incorporacion de analisis estatico en CI con SonarCloud

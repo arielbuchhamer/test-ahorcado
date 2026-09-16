@@ -1,14 +1,9 @@
 import { Component } from 'react';
 import { CircleX, Eye, EyeOff, Play, RotateCcw, Send, Trophy } from 'lucide-react';
+import { crearPartida, intentarLetra } from '../api.js';
 
 const MAX_LIVES = 6;
-const VALID_WORD = /^[a-zñ]+$/i;
-const VALID_LETTER = /^[a-zñ]$/i;
 const ALPHABET = 'abcdefghijklmnñopqrstuvwxyz'.split('');
-
-function normalizeText(value) {
-  return value.toLocaleLowerCase('es-AR');
-}
 
 function HangmanDrawing({ misses }) {
   return (
@@ -35,37 +30,62 @@ function HangmanDrawing({ misses }) {
   );
 }
 
-class HangmanGame extends Component {
-  state = {
-    secretInput: '',
-    showSecret: false,
-    secretWord: '',
-    guessedLetters: [],
-    letterInput: '',
-    setupError: '',
-    roundMessage: '',
-  };
+const INITIAL_STATE = {
+  secretInput: '',
+  showSecret: false,
+  partida: null,
+  letterInput: '',
+  setupError: '',
+  roundMessage: '',
+  loading: false,
+};
 
-  get isPlaying() {
-    return this.state.secretWord.length > 0;
+function roundMessageFor({ resultado, estado }, letter) {
+  if (estado === 'GANADA') {
+    return 'Ganaste. La palabra fue revelada completa.';
   }
 
-  get wrongLetters() {
-    const { guessedLetters, secretWord } = this.state;
-    return guessedLetters.filter((letter) => !secretWord.includes(letter));
+  if (estado === 'PERDIDA') {
+    return 'Perdiste. La palabra secreta fue revelada.';
+  }
+
+  switch (resultado) {
+    case 'ACIERTO':
+      return `Bien: ${letter} está en la palabra.`;
+    case 'FALLO':
+      return `No está: ${letter}.`;
+    case 'REPETIDA':
+      return `La letra ${letter} ya fue usada.`;
+    default:
+      return '';
+  }
+}
+
+class HangmanGame extends Component {
+  state = INITIAL_STATE;
+
+  get isPlaying() {
+    return this.state.partida !== null;
+  }
+
+  get guessedLetters() {
+    return this.state.partida?.letrasUsadas ?? [];
   }
 
   get livesLeft() {
-    return MAX_LIVES - this.wrongLetters.length;
+    return this.state.partida?.vidas ?? MAX_LIVES;
+  }
+
+  get misses() {
+    return MAX_LIVES - this.livesLeft;
   }
 
   get hasWon() {
-    const { guessedLetters, secretWord } = this.state;
-    return this.isPlaying && [...secretWord].every((letter) => guessedLetters.includes(letter));
+    return this.state.partida?.estado === 'GANADA';
   }
 
   get hasLost() {
-    return this.isPlaying && this.livesLeft === 0;
+    return this.state.partida?.estado === 'PERDIDA';
   }
 
   get isRoundOver() {
@@ -73,93 +93,54 @@ class HangmanGame extends Component {
   }
 
   get revealedWord() {
-    const { guessedLetters, secretWord } = this.state;
+    const { partida } = this.state;
 
-    if (!secretWord) {
+    if (!partida) {
       return [];
     }
 
     if (this.isRoundOver) {
-      return [...secretWord];
+      return [...partida.palabraSecreta];
     }
 
-    return [...secretWord].map((letter) => (guessedLetters.includes(letter) ? letter : ''));
+    return partida.palabraOculta.split(' ').map((letter) => (letter === '_' ? '' : letter));
   }
 
-  startGame = (event) => {
+  startGame = async (event) => {
     event.preventDefault();
 
-    const { secretInput } = this.state;
+    this.setState({ loading: true, setupError: '' });
 
-    if (secretInput.length === 0) {
-      this.setState({ setupError: 'Ingresá una palabra secreta.' });
-      return;
+    try {
+      const partida = await crearPartida(this.state.secretInput);
+      this.setState({ partida, letterInput: '', roundMessage: '', loading: false });
+    } catch (error) {
+      this.setState({ setupError: error.message, loading: false });
     }
-
-    if (!VALID_WORD.test(secretInput)) {
-      this.setState({ setupError: 'Solo se aceptan letras sin tildes. La ñ está permitida.' });
-      return;
-    }
-
-    this.setState({
-      secretWord: normalizeText(secretInput),
-      guessedLetters: [],
-      letterInput: '',
-      setupError: '',
-      roundMessage: '',
-    });
   };
 
-  playLetter = (rawLetter) => {
-    if (this.isRoundOver) {
+  playLetter = async (rawLetter) => {
+    const { partida, loading } = this.state;
+
+    if (this.isRoundOver || loading) {
       return;
     }
 
-    const { guessedLetters, secretWord } = this.state;
-    const normalizedLetter = normalizeText(rawLetter);
+    this.setState({ loading: true });
 
-    if (!VALID_LETTER.test(rawLetter)) {
-      this.setState({ roundMessage: 'Ingresá una sola letra sin tildes.' });
-      return;
-    }
+    try {
+      const nextPartida = await intentarLetra(partida.id, rawLetter);
+      const letter = rawLetter.toLocaleLowerCase('es-AR');
 
-    if (guessedLetters.includes(normalizedLetter)) {
       this.setState({
+        partida: nextPartida,
         letterInput: '',
-        roundMessage: `La letra ${normalizedLetter} ya fue usada.`,
+        roundMessage: roundMessageFor(nextPartida, letter),
+        loading: false,
       });
-      return;
+    } catch (error) {
+      this.setState({ roundMessage: error.message, loading: false });
     }
-
-    const nextGuessedLetters = [...guessedLetters, normalizedLetter];
-    const nextLivesLeft = secretWord.includes(normalizedLetter) ? this.livesLeft : this.livesLeft - 1;
-    const nextHasWon = [...secretWord].every((letter) => nextGuessedLetters.includes(letter));
-
-    if (nextHasWon) {
-      this.setState({
-        guessedLetters: nextGuessedLetters,
-        letterInput: '',
-        roundMessage: 'Ganaste. La palabra fue revelada completa.',
-      });
-      return;
-    }
-
-    if (nextLivesLeft === 0) {
-      this.setState({
-        guessedLetters: nextGuessedLetters,
-        letterInput: '',
-        roundMessage: 'Perdiste. La palabra secreta fue revelada.',
-      });
-      return;
-    }
-
-    this.setState({
-      guessedLetters: nextGuessedLetters,
-      letterInput: '',
-      roundMessage: secretWord.includes(normalizedLetter)
-        ? `Bien: ${normalizedLetter} está en la palabra.`
-        : `No está: ${normalizedLetter}.`,
-    });
   };
 
   submitLetter = (event) => {
@@ -168,15 +149,7 @@ class HangmanGame extends Component {
   };
 
   resetGame = () => {
-    this.setState({
-      secretInput: '',
-      showSecret: false,
-      secretWord: '',
-      guessedLetters: [],
-      letterInput: '',
-      setupError: '',
-      roundMessage: '',
-    });
+    this.setState(INITIAL_STATE);
   };
 
   renderResultBanner() {
@@ -184,7 +157,7 @@ class HangmanGame extends Component {
       return null;
     }
 
-    const { secretWord } = this.state;
+    const { palabraSecreta } = this.state.partida;
     const isVictory = this.hasWon;
     const ResultIcon = isVictory ? Trophy : CircleX;
 
@@ -202,8 +175,8 @@ class HangmanGame extends Component {
           <strong>{isVictory ? 'Victoria' : 'Partida perdida'}</strong>
           <p>
             {isVictory
-              ? `Descubriste la palabra completa: ${secretWord}.`
-              : `Te quedaste sin vidas. La palabra secreta era ${secretWord}.`}
+              ? `Descubriste la palabra completa: ${palabraSecreta}.`
+              : `Te quedaste sin vidas. La palabra secreta era ${palabraSecreta}.`}
           </p>
         </div>
       </aside>
@@ -211,7 +184,7 @@ class HangmanGame extends Component {
   }
 
   renderSetupForm() {
-    const { secretInput, setupError, showSecret } = this.state;
+    const { secretInput, setupError, showSecret, loading } = this.state;
 
     return (
       <form className="setup-form" onSubmit={this.startGame}>
@@ -244,7 +217,7 @@ class HangmanGame extends Component {
             {setupError}
           </p>
         )}
-        <button className="primary-button" type="submit" data-testid="start-game-button">
+        <button className="primary-button" type="submit" disabled={loading} data-testid="start-game-button">
           <Play aria-hidden="true" size={18} />
           Comenzar partida
         </button>
@@ -253,12 +226,13 @@ class HangmanGame extends Component {
   }
 
   renderGameRound() {
-    const { guessedLetters, letterInput, roundMessage } = this.state;
+    const { letterInput, roundMessage, loading } = this.state;
+    const { guessedLetters } = this;
 
     return (
       <div className="play-layout">
         <section className="drawing-panel" aria-label="Dibujo del ahorcado">
-          <HangmanDrawing misses={this.wrongLetters.length} />
+          <HangmanDrawing misses={this.misses} />
         </section>
 
         <section className="round-panel" aria-label="Partida">
@@ -269,7 +243,7 @@ class HangmanGame extends Component {
             </div>
             <div>
               <span className="status-label">Errores</span>
-              <strong>{this.wrongLetters.length}</strong>
+              <strong>{this.misses}</strong>
             </div>
             <div>
               <span className="status-label">Letras usadas</span>
@@ -308,7 +282,7 @@ class HangmanGame extends Component {
                 className="icon-button send-button"
                 type="submit"
                 aria-label="Probar letra"
-                disabled={this.isRoundOver}
+                disabled={this.isRoundOver || loading}
                 data-testid="guess-button"
               >
                 <Send aria-hidden="true" size={20} />
@@ -322,7 +296,7 @@ class HangmanGame extends Component {
                 className="letter-button"
                 type="button"
                 key={letter}
-                disabled={guessedLetters.includes(letter) || this.isRoundOver}
+                disabled={guessedLetters.includes(letter) || this.isRoundOver || loading}
                 onClick={() => this.playLetter(letter)}
               >
                 {letter}
