@@ -16,6 +16,7 @@ La aplicacion esta compuesta por una API REST en Java con la logica del juego y 
 - Analisis estatico continuo: SonarCloud
 - API REST: Spring Boot 4
 - Frontend: React (Vite)
+- Acceptance tests: Cucumber (Gherkin) + Playwright for Java
 
 ## Estructura del proyecto
 
@@ -31,6 +32,11 @@ test-ahorcado/
 |       |-- main/java/com/testahorcado/backend/api/  # API REST
 |       |-- main/resources/application.properties
 |       `-- test/java/com/testahorcado/backend/
+|-- acceptance-tests/
+|   |-- pom.xml
+|   `-- src/test/
+|       |-- java/com/testahorcado/acceptance/        # steps y hooks
+|       `-- resources/features/ahorcado.feature      # escenarios en Gherkin
 |-- frontend/
 |   |-- package.json
 |   |-- vite.config.js
@@ -105,6 +111,64 @@ Se organizan en dos niveles:
 
 - `JuegoAhorcadoTest`: unit tests de las reglas del juego, escritos con TDD
 - `PartidaControllerTest`: tests de la API con Spring MockMvc, que validan los endpoints junto con la logica real (service tests)
+
+## Acceptance Tests
+
+Los acceptance tests validan la aplicacion completa desde el navegador (UI + API + logica del juego). Estan en el modulo `acceptance-tests/`, separado del backend para que no afecten la velocidad de los unit tests ni el coverage.
+
+Herramientas:
+
+- **Cucumber**: los escenarios se escriben en Gherkin en español (`ahorcado.feature`)
+- **Playwright for Java**: automatiza el navegador (Chromium). Se eligio sobre Selenium porque espera automaticamente a que la UI se actualice luego de cada llamada a la API, lo que evita tests inestables, y ademas es mas rapido
+- **JUnit Platform**: ejecuta Cucumber desde Maven
+
+Escenarios:
+
+1. Ganar la partida adivinando todas las letras
+2. Perder la partida al quedarse sin vidas
+3. Fallar una letra resta una vida
+4. Acertar una letra revela todas sus apariciones
+5. Repetir una letra no resta vidas
+6. Rechazar una palabra secreta con tildes
+7. Empezar una nueva partida
+
+### Como ejecutarlos
+
+Se necesitan tres terminales, desde la raiz del repositorio:
+
+1. Levantar el backend y esperar el mensaje `Started BackendApplication`:
+
+   ```bash
+   cd backend && mvn spring-boot:run
+   ```
+
+2. Levantar el frontend:
+
+   ```bash
+   cd frontend && npm run dev
+   ```
+
+3. Ejecutar los acceptance tests:
+
+   ```bash
+   cd acceptance-tests && mvn test
+   ```
+
+Para ver el navegador y seguir cada paso a simple vista (con una pausa de 1 segundo entre acciones):
+
+```bash
+cd acceptance-tests && HEADLESS=false SLOW_MO=1000 mvn test
+```
+
+| Variable de entorno | Default | Uso |
+|---|---|---|
+| `BASE_URL` | `http://localhost:5173` | URL de la aplicacion a testear |
+| `HEADLESS` | `true` | `false` para ver el navegador mientras corren |
+| `SLOW_MO` | `0` | Milisegundos de pausa entre cada accion (ej. `1000`) |
+
+Al finalizar, Maven muestra cada escenario con sus pasos y el resumen `Tests run: 7, Failures: 0`. El reporte HTML queda en `acceptance-tests/target/cucumber-report.html`.
+
+La primera ejecucion descarga los navegadores de Playwright. Si el backend o el frontend no estan levantados, los tests fallan en el primer paso con un error de conexion.
 
 ## CI
 
