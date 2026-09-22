@@ -134,7 +134,8 @@ Escenarios:
 
 ### Como ejecutarlos
 
-Se necesitan tres terminales, desde la raiz del repositorio:
+En CI se ejecutan solos en cada push (ver seccion CI). Para correrlos en local se
+necesitan tres terminales, desde la raiz del repositorio:
 
 1. Levantar el backend y esperar el mensaje `Started BackendApplication`:
 
@@ -180,7 +181,15 @@ Actualmente, el workflow:
 - instala dependencias y compila el frontend con Node.js 22 (`npm ci` + `npm run build`)
 - ejecuta los unit tests automaticamente
 - ejecuta analisis estatico con SonarCloud
+- ejecuta los acceptance tests end-to-end (job `acceptance-tests`)
 - se dispara en cada `push` y `pull request` sobre `main`
+
+El job `acceptance-tests` corre luego de que compilan backend y frontend. Levanta la
+aplicacion completa dentro del runner (el jar del backend en el puerto 8080 y el dev
+server de Vite en el 5173, que proxea `/api`), espera a que ambos respondan, instala
+Chromium y ejecuta los escenarios de Cucumber. El reporte HTML queda publicado como
+artifact `cucumber-report`; si el job falla, se publican tambien los logs de ambos
+servidores para poder diagnosticarlo.
 
 La configuracion del pipeline se encuentra en `.github/workflows/ci-compile.yml`.
 
